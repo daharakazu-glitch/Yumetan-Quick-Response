@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ユメタン クイックレスポンスプラクティス</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- アイコン用のライブラリ -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* 録音中のアニメーション用 */
+        @keyframes pulse-ring {
+            0% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); }
+            100% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+        .recording-pulse {
+            animation: pulse-ring 2s infinite;
+        }
+        /* カスタムアニメーション */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-red-600 font-sans text-slate-800 min-h-screen flex flex-col items-center py-8 px-4">
+
+    <!-- アプリケーションのコンテナ（JavaScriptで中身を描画します） -->
+    <div id="app-root" class="w-full max-w-2xl flex flex-col items-center"></div>
+
+<script>
+// --- データ ---
+const rawCSV = `単語番号,フレーズの訳,フレーズ①,フレーズ②
+001,□ 今、何【時】ですか。,□ ( )( ) is ( ) now?,□ What 【time】 is it now?
+002,□ この【カード】にあなたの名前を書きなさい。,□ ( ) your ( )( ) this card.,□ Write your name on this 【card】.
+003,□ 動物はたいてい、【火】を恐れる。,□ ( )( ) usually ( )( )( ).,□ Animals are usually afraid of 【fire】.
+004,□ 私は大衆【文化】に興味がある。,□ I'm ( )( )( )( ).,□ I'm interested in popular 【culture】.
+005,□ 【国】中を旅行する,□ ( ) all ( ) the ( ),□ travel all over the 【country】
+006,□ 私はその森で【道】に迷った。,□ I ( ) my ( ) in the ( ).,□ I lost my 【way】 in the forest.
+007,□ 【人々】は地震を恐れている。,□ ( ) are ( ) of ( ).,□ 【People】 are afraid of earthquakes.
+008,□ 日本の家屋の多くは【木】造だ。,□ Many Japanese houses ( )( )( )( ).,□ Many Japanese houses are made of 【wood】.
+009,□ 私はこの【映画】を見たことがある。,□ I ( )( ) this ( ).,□ I have watched this 【movie】.
+010,□ 私は昨日いとこに【手紙】を書いた。,□ I ( ) a ( ) to my ( ) yesterday.,□ I wrote a 【letter】 to my cousin yesterday.
+011,□ 私の夢をかなえるために【努力】する,□ ( )( ) to ( ) my dreams,□ make 【efforts】 to realize my dreams
+012,□ 【夜が明け】かかっている。,□ ( ) is ( ) to ( ).,□ 【Dawn】 is going to break.
+013,□ 【供給】と需要の不均衡,□ the ( ) ( ) ( ),□ the 【supply】 demand imbalance
+014,□ 一番上の【等級】のワインを注文する,□ ( ) a ( )( ) wine,□ order a top 【grade】 wine
+015,□ 特別な【道具】を使って作業する,□ ( )( ) a special ( ),□ work with a special 【instrument】
+016,□ 私には交通【手段】が何もない。,□ I don't ( )( )( ) of ( ).,□ I don't have any 【means】 of transportation.
+017,□ 失業【率】,□ the ( )( ),□ the unemployment 【rate】
+018,□ この本は環境問題を【主題】としている。,□ This book is ( ) the ( ) of ( )( ).,□ This book is on the 【subject】 of environmental issues.
+019,□ その店に【行く方法】は1つしかない。,□ ( )( ) only one ( ) of ( ) to the shop.,□ There is only one means of 【access】 to the shop.
+020,□ 彼女を【ちらっと】盗み【見る】,□ ( ) a ( ) at her,□ steal a 【glance】 at her
+021,□ 明日から新【学期】が始まる。,□ The ( )( )( ) tomorrow.,□ The new 【semester】 begins tomorrow.
+022,□ 【学部】入学【生】は150人いる。,□ There are ( ) new ( ).,□ There are 150 new 【undergraduates】.
+023,□ 空の【容器】をビールで満たす,□ ( ) an ( )( )( ) beer,□ fill an empty 【vessel】 with beer
+024,□ この【食料品店】の主人は誰ですか。,□ Who's the ( ) of ( )( )?,□ Who's the owner of this 【grocery】?
+025,□ 【郵便料金】は50セントです。,□ The ( ) is ( )( ).,□ The 【postage】 is 50 cents.
+026,□ その【超高層ビル】を見上げる,□ ( )( )( ) the ( ),□ look up at the 【skyscraper】
+027,□ 私たちはこっそり【屋根裏部屋】に集まった。,□ We ( )( )( ) in the ( ).,□ We secretly got together in the 【attic】.
+028,□ 【保育園】に入る,□ ( ) a ( ),□ enter a 【nursery】
+029,□ 彼は警察【学校】の教官だ。,□ He's a ( ) ( ) ( ).,□ He's a police 【academy】 instructor.
+030,□ 深刻な【大失敗】を犯す,□ ( ) a ( )( ),□ make a serious 【blunder】`;
+
+const parseData = (csv) => {
+    const lines = csv.trim().split('\n');
+    return lines.slice(1).map(line => {
+        const parts = line.split(',');
+        const cleanStr = (str) => str ? str.replace(/^□\s*/, '').trim() : '';
+        return {
+            id: parts[0],
+            ja: cleanStr(parts[1]),
+            hint: cleanStr(parts[2]),
+            en: cleanStr(parts[3])
+        };
+    });
+};
+
+const questions = parseData(rawCSV);
+
+// --- ヘルパー関数 ---
+const normalizeText = (text) => {
+    return text
+        .toLowerCase()
+        .replace(/[【】.,?!]/g, '')
+        .replace(/-/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+};
+
+const highlightTextHTML = (text) => {
+    const parts = text.split(/(【.*?】)/g);
+    return parts.map(part => {
+        if (part.startsWith('【') && part.endsWith('】')) {
+            // ユメタン風の黄色背景＋赤文字ハイライト
+            return `<strong class="text-red-700 font-bold bg-yellow-300 px-1 rounded shadow-sm">${part.slice(1, -1)}</strong>`;
+        }
+        return part;
+    }).join('');
+};
+
+// --- アプリケーションの状態とロジック ---
+const app = {
+    state: {
+        currentIndex: 0,
+        mode: 'normal', // 'normal' | 'hint'
+        status: 'idle', // 'idle' | 'recording' | 'correct' | 'incorrect' | 'show_answer'
+        transcript: '',
+        recognitionSupported: true
+    },
+    recognition: null,
+
+    init() {
+        // 音声認識のセットアップ
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (SpeechRecognition) {
+            this.recognition = new SpeechRecognition();
+            this.recognition.continuous = false;
+            this.recognition.interimResults = true;
+            this.recognition.lang = 'en-US';
+
+            this.recognition.onresult = (event) => {
+                let interimTranscript = '';
+                let finalTranscript = '';
+
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) {
+                        finalTranscript += event.results[i][0].transcript;
+                    } else {
+                        interimTranscript += event.results[i][0].transcript;
+                    }
+                }
+
+                if (finalTranscript) {
+                    this.state.transcript = finalTranscript;
+                    this.checkAnswer(finalTranscript);
+                } else {
+                    this.state.transcript = interimTranscript;
+                    this.render();
+                }
+            };
+
+            this.recognition.onerror = (event) => {
+                console.error("Speech recognition error", event.error);
+                if (event.error !== 'aborted') {
+                    this.state.status = 'idle';
+                    this.state.transcript = 'エラーが発生しました。もう一度試してください。';
+                    this.render();
+                }
+            };
+
+            this.recognition.onend = () => {
+                if (this.state.status === 'recording') {
+                    this.state.status = 'idle';
+                    this.render();
+                }
+            };
+        } else {
+            this.state.recognitionSupported = false;
+        }
+
+        // 音声合成の初期化
+        window.speechSynthesis.getVoices();
+        
+        this.render();
+    },
+
+    playAudio(text) {
+        const cleanText = text.replace(/[【】]/g, '');
+        const utterance = new SpeechSynthesisUtterance(cleanText);
+        utterance.lang = 'en-US';
+        utterance.rate = 0.9;
+
+        const voices = window.speechSynthesis.getVoices();
+        const englishVoices = voices.filter(v => v.lang.startsWith('en'));
+        const preferredVoice = englishVoices.find(v => v.name.includes('Google') || v.name.includes('Premium') || v.name.includes('Samantha')) || englishVoices[0];
+        
+        if (preferredVoice) {
+            utterance.voice = preferredVoice;
+        }
+        
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.speak(utterance);
+    },
+
+    toggleRecording() {
+        if (this.state.status === 'recording') {
+            this.recognition?.stop();
+            this.state.status = 'idle';
+        } else {
+            this.state.transcript = '';
+            this.state.status = 'recording';
+            try {
+                this.recognition?.start();
+            } catch (e) {
+                console.error("Failed to start recognition", e);
+                this.state.status = 'idle';
+            }
+        }
+        this.render();
+    },
+
+    checkAnswer(spokenText) {
+        const currentQ = questions[this.state.currentIndex];
+        const target = normalizeText(currentQ.en);
+        const spoken = normalizeText(spokenText);
+
+        if (spoken === target || (spoken.includes(target) && spoken.length < target.length + 15)) {
+            this.state.status = 'correct';
+            this.playAudio(currentQ.en);
+        } else {
+            this.state.status = 'incorrect';
+        }
+        this.render();
+    },
+
+    setMode(mode) {
+        this.state.mode = mode;
+        this.state.status = 'idle';
+        this.state.transcript = '';
+        this.render();
+    },
+
+    nextQuestion() {
+        if (this.state.currentIndex < questions.length - 1) {
+            if (this.state.status === 'recording') {
+                this.recognition?.stop();
+            }
+            this.state.currentIndex++;
+            this.state.status = 'idle';
+            this.state.transcript = '';
+            this.render();
+        }
+    },
+
+    prevQuestion() {
+        if (this.state.currentIndex > 0) {
+            if (this.state.status === 'recording') {
+                this.recognition?.stop();
+            }
+            this.state.currentIndex--;
+            this.state.status = 'idle';
+            this.state.transcript = '';
+            this.render();
+        }
+    },
+
+    skipQuestion() {
+        if (this.state.currentIndex < questions.length - 1) {
+            if (this.state.status === 'recording') {
+                this.recognition?.stop();
+            }
+            this.state.currentIndex++;
+            this.state.status = 'idle';
+            this.state.transcript = '';
+            this.render();
+        }
+    },
+
+    showAnswer() {
+        this.state.status = 'show_answer';
+        const currentQ = questions[this.state.currentIndex];
+        this.playAudio(currentQ.en);
+        this.render();
+    },
+
+    // UIの描画
+    render() {
+        const root = document.getElementById('app-root');
+        
+        if (!this.state.recognitionSupported) {
+            root.innerHTML = `
+                <div class="bg-white p-8 rounded-2xl shadow-lg max-w-md w-full text-center mt-20">
+                    <i data-lucide="alert-circle" class="w-16 h-16 text-red-500 mx-auto mb-4"></i>
+                    <h2 class="text-xl font-bold mb-2">ブラウザが非対応です</h2>
+                    <p class="text-slate-600 mb-4">このアプリは音声認識機能を使用します。Google Chrome、Microsoft Edge、Safariなどの対応ブラウザをご利用ください。</p>
+                </div>
+            `;
+            lucide.createIcons();
+            return;
+        }
+
+        const currentQ = questions[this.state.currentIndex];
+        
+        // ヘッダー部分とキャラクター画像
+        let html = `
+            <div class="w-full mb-4 text-center flex flex-col items-center">
+                <h1 class="text-2xl md:text-3xl font-extrabold text-white tracking-tight drop-shadow-md">
+                    ユメタン <span class="text-yellow-300">クイックレスポンス</span>
+                </h1>
+                <p class="text-sm text-red-100 mt-1 font-medium">瞬時に英語を組み立てるトレーニング</p>
+                
+                <!-- キャラクター画像（アップロードした画像に差し替え可能） -->
+                <div class="mt-6 w-24 h-24 bg-white rounded-full border-4 border-yellow-400 shadow-lg overflow-hidden flex items-center justify-center relative z-10">
+                    <!-- imgタグのsrcをご自身のキャラクター画像のパスに変更してください -->
+                    <img src="character.png" alt="Character" onerror="this.onerror=null; this.outerHTML='<div class=\\'text-5xl\\'>🐶</div>';" class="w-full h-full object-cover">
+                </div>
+            </div>
+            
+            <div class="w-full relative">
+                <!-- 吹き出しのしっぽ -->
+                <div class="absolute -top-3 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-[15px] border-l-transparent border-b-[20px] border-b-white border-r-[15px] border-r-transparent z-10"></div>
+                
+                <div class="bg-white rounded-3xl shadow-2xl w-full overflow-hidden flex flex-col border-b-8 border-yellow-400">
+                    <!-- コントロールパネル -->
+                    <div class="bg-red-50 border-b border-red-100 p-4 flex justify-between items-center">
+                        <div class="flex bg-white shadow-inner rounded-full p-1 border border-red-100">
+                            <button onclick="app.setMode('normal')" class="px-4 py-1.5 text-sm font-bold rounded-full transition-all ${this.state.mode === 'normal' ? 'bg-red-600 text-white shadow-sm' : 'text-slate-400 hover:text-red-600'}">ノーマル</button>
+                            <button onclick="app.setMode('hint')" class="px-4 py-1.5 text-sm font-bold rounded-full transition-all ${this.state.mode === 'hint' ? 'bg-red-600 text-white shadow-sm' : 'text-slate-400 hover:text-red-600'}">ヒントあり</button>
+                        </div>
+                        <div class="text-sm font-extrabold text-red-400 bg-white px-3 py-1 rounded-full border border-red-100 shadow-sm">
+                            ${this.state.currentIndex + 1} / ${questions.length}
+                        </div>
+                    </div>
+
+                    <!-- 問題エリア -->
+                    <div class="p-8 md:p-12 flex-grow flex flex-col items-center justify-center text-center min-h-[250px]">
+                        <div class="mb-2 text-sm font-bold text-yellow-500 tracking-wider">Phrase No. ${currentQ.id}</div>
+                        <h2 class="text-2xl md:text-3xl font-bold text-slate-800 mb-6 leading-relaxed">
+                            ${highlightTextHTML(currentQ.ja)}
+                        </h2>
+        `;
+
+        // ヒント表示
+        if (this.state.mode === 'hint' && this.state.status !== 'correct' && this.state.status !== 'show_answer') {
+            html += `
+                <div class="mt-2 p-4 bg-yellow-50 rounded-xl border-2 border-yellow-200 w-full max-w-md shadow-sm">
+                    <p class="text-lg font-mono text-yellow-800 font-bold tracking-wide">${currentQ.hint}</p>
+                </div>
+            `;
+        }
+
+        // 結果表示エリア
+        if (this.state.status === 'correct') {
+            html += `
+                <div class="mt-4 w-full animate-[fadeIn_0.5s_ease-out]">
+                    <div class="flex items-center justify-center text-green-600 font-bold text-xl mb-4">
+                        <i data-lucide="check-circle" class="w-6 h-6 mr-2"></i> 正解！ Excellent!
+                    </div>
+                    <div class="bg-green-50 rounded-2xl p-6 border-2 border-green-200 relative group text-left shadow-sm">
+                        <p class="text-2xl font-bold text-green-900 text-center pr-8">${highlightTextHTML(currentQ.en)}</p>
+                        <button onclick="app.playAudio('${currentQ.en.replace(/'/g, "\\'")}')" class="absolute top-1/2 -translate-y-1/2 right-4 p-3 bg-white rounded-full text-green-600 shadow hover:bg-green-100 hover:scale-105 transition">
+                            <i data-lucide="volume-2" class="w-6 h-6"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        } else if (this.state.status === 'incorrect') {
+            html += `
+                <div class="mt-4 w-full animate-[fadeIn_0.3s_ease-out]">
+                    <div class="flex items-center justify-center text-red-500 font-bold text-lg mb-2">
+                        <i data-lucide="x-circle" class="w-5 h-5 mr-1"></i> もう少し！
+                    </div>
+                    <div class="text-slate-600 bg-red-50 px-4 py-3 rounded-xl inline-block border border-red-100">
+                        あなたの解答: <span class="font-mono text-red-800 italic font-medium">"${this.state.transcript}"</span>
+                    </div>
+                </div>
+            `;
+        } else if (this.state.status === 'show_answer') {
+            html += `
+                <div class="mt-4 w-full animate-[fadeIn_0.5s_ease-out]">
+                    <div class="text-red-500 font-bold mb-2">正解のフレーズ</div>
+                    <div class="bg-red-50 rounded-2xl p-6 border-2 border-red-200 relative group text-left shadow-sm">
+                        <p class="text-2xl font-bold text-red-900 text-center pr-8">${highlightTextHTML(currentQ.en)}</p>
+                        <button onclick="app.playAudio('${currentQ.en.replace(/'/g, "\\'")}')" class="absolute top-1/2 -translate-y-1/2 right-4 p-3 bg-white rounded-full text-red-600 shadow hover:bg-red-100 hover:scale-105 transition">
+                            <i data-lucide="volume-2" class="w-6 h-6"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 録音中のテキスト
+        if (this.state.status === 'recording' && this.state.transcript) {
+            html += `
+                <div class="mt-8 text-xl font-mono text-slate-500 animate-pulse font-medium">
+                    "${this.state.transcript}..."
+                </div>
+            `;
+        }
+
+        html += `</div>`; // 問題エリアの終了
+
+        // アクションエリア
+        html += `<div class="bg-slate-50 p-6 flex flex-col items-center border-t border-slate-100 relative">`;
+        
+        // マイクボタン
+        if (this.state.status === 'idle' || this.state.status === 'recording' || this.state.status === 'incorrect') {
+            const isRecording = this.state.status === 'recording';
+            html += `
+                <div class="flex flex-col items-center -mt-12 mb-4 relative z-10">
+                    <button onclick="app.toggleRecording()" class="flex items-center justify-center w-20 h-20 rounded-full shadow-xl transition-all transform hover:scale-105 border-4 ${isRecording ? 'bg-red-500 text-white border-red-200 recording-pulse' : 'bg-yellow-400 text-red-900 border-white hover:bg-yellow-500'}">
+                        ${isRecording ? '<i data-lucide="square" class="w-8 h-8 fill-current"></i>' : '<i data-lucide="mic" class="w-10 h-10"></i>'}
+                    </button>
+                    <span class="text-sm font-bold mt-3 text-slate-500">
+                        ${isRecording ? 'タップして停止' : 'タップして発音'}
+                    </span>
+                </div>
+            `;
+        }
+
+        // 下部ボタン領域
+        html += `<div class="flex flex-wrap gap-4 justify-between items-center w-full mt-2">`;
+        
+        // 左側（前へ ＆ スキップ）
+        const isFirst = this.state.currentIndex === 0;
+        const isLast = this.state.currentIndex === questions.length - 1;
+        
+        html += `<div class="flex gap-2">
+            <button onclick="app.prevQuestion()" ${isFirst ? 'disabled' : ''} class="px-4 py-2 font-bold rounded-xl flex items-center transition ${isFirst ? 'bg-slate-100 text-slate-300 cursor-not-allowed' : 'bg-white border border-slate-200 text-slate-600 shadow-sm hover:bg-slate-50'}">
+                <i data-lucide="chevron-left" class="w-4 h-4 mr-1"></i> 前へ
+            </button>`;
+            
+        // スキップボタン（最後の問題では非表示）
+        if (!isLast && (this.state.status === 'idle' || this.state.status === 'recording' || this.state.status === 'incorrect')) {
+            html += `
+            <button onclick="app.skipQuestion()" class="px-4 py-2 font-bold rounded-xl flex items-center bg-white border border-yellow-300 text-yellow-600 shadow-sm hover:bg-yellow-50 transition">
+                スキップ <i data-lucide="skip-forward" class="w-4 h-4 ml-1"></i>
+            </button>`;
+        }
+        
+        html += `</div>`;
+
+        // 右側（答えを見る OR 次のフレーズ）
+        if (this.state.status === 'incorrect') {
+            html += `
+                <button onclick="app.showAnswer()" class="px-6 py-2 bg-slate-800 text-white font-bold rounded-xl flex items-center shadow hover:bg-slate-700 transition">
+                    <i data-lucide="eye" class="w-4 h-4 mr-2"></i> 答えを見る
+                </button>
+            `;
+        } else if (this.state.status === 'correct' || this.state.status === 'show_answer') {
+             if (!isLast) {
+                 html += `
+                    <button onclick="app.nextQuestion()" class="px-6 py-3 bg-red-600 text-white font-bold rounded-xl flex items-center shadow-md hover:bg-red-700 hover:shadow-lg transition transform hover:-translate-y-0.5 whitespace-nowrap">
+                        次のフレーズ <i data-lucide="chevron-right" class="w-5 h-5 ml-1"></i>
+                    </button>
+                `;
+             } else {
+                 html += `
+                    <div class="px-6 py-3 bg-green-500 text-white font-bold rounded-xl flex items-center shadow-md whitespace-nowrap">
+                        <i data-lucide="party-popper" class="w-5 h-5 mr-2"></i> 全て完了！
+                    </div>
+                `;
+             }
+        }
+
+        html += `
+                </div>
+            </div>
+        </div>`;
+
+        root.innerHTML = html;
+        
+        // Lucideアイコンの再描画
+        lucide.createIcons();
+    }
+};
+
+// ページ読み込み完了時に初期化
+window.addEventListener('DOMContentLoaded', () => {
+    app.init();
+});
+</script>
+
+</body>
+</html>
