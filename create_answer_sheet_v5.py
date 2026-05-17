@@ -130,10 +130,9 @@ def build(output_path):
     # ── §1 Listening（思考・判断・表現　14点）────────────────────
     # A/B：答えは①②③ の 1 文字 → 小さめのセル
     # C ：各空欄 1〜3 語 → 語数に合わせた幅
-    para(doc, '１　（思考・判断・表現　14点）', bold=True, before=6, after=2)
+    para(doc, '１　（思考・判断・表現　14点）', bold=True, before=8, after=2)
 
     # A（2点）/ B（2点）
-    para(doc, 'A（2点）・B（2点）', size=9.5, before=2, after=1)
     t1ab = mktbl(doc, 1, 4, [3.2, 2.0, 3.2, 2.0], 0.84)
     cw(t1ab.cell(0,0), 'A（2点）', 9.5, True, WD_ALIGN_PARAGRAPH.CENTER)
     cw(t1ab.cell(0,1), '')
@@ -154,7 +153,7 @@ def build(output_path):
     # ── §2 LEAP Vocabulary（知識・技能　15点）─────────────────────
     # A：答えは A/B/C/D → 3.0cm/問 × 5問 × 2行 = 15cm
     # B：答えは英単語 1 語 → 3.6cm/問 × 5問 = 18cm
-    para(doc, '２　（知識・技能　15点）', bold=True, before=5, after=2)
+    para(doc, '２　（知識・技能　15点）', bold=True, before=7, after=2)
 
     para(doc, 'A（1×10=10点）　選択（A・B・C・D）', size=9.5, before=2, after=1)
     t2a = mktbl(doc, 2, 5, [3.0]*5, 0.84)
@@ -168,11 +167,11 @@ def build(output_path):
         cw(t2b.cell(0,j), f'({j+1})', FS)
 
     # ── §3 Grammar and Usage（知識・技能　28点）──────────────────
-    para(doc, '３　（知識・技能　28点）', bold=True, before=5, after=2)
+    para(doc, '３　（知識・技能　28点）', bold=True, before=7, after=2)
 
     # A 語句整序：答えは完全な英文 → 1問1行・全幅
     para(doc, 'A（1×10=10点）　完全正答のみ得点', size=9.5, before=2, after=1)
-    t3a = mktbl(doc, 5, 2, [9.2, 9.2], 1.0)
+    t3a = mktbl(doc, 5, 2, [9.2, 9.2], 1.5)
     for i in range(5):
         for j in range(2):
             cw(t3a.cell(i,j), f'({i*2+j+1})', FS)
@@ -184,7 +183,7 @@ def build(output_path):
     para(doc, 'B（1×12=12点）', size=9.5, before=3, after=1)
     b_blanks = [1,2,2,3,3,3, 1,2,2,2,2,1]
     NB = 0.8; BX = 2.2
-    t3b = mktbl(doc, 6, 8, [NB,BX,BX,BX, NB,BX,BX,BX], 0.72)
+    t3b = mktbl(doc, 6, 8, [NB,BX,BX,BX, NB,BX,BX,BX], 1.0)
     for i in range(6):
         for side in range(2):
             qi = i + side*6; bc = side*4; nb = b_blanks[qi]
@@ -206,23 +205,23 @@ def build(output_path):
     # ── §4 Writing / 英訳（思考・判断・表現　12点）───────────────
     # 答えは英文 1 文 → フル幅・1.0cm/行
     para(doc, '４　（思考・判断・表現　12点）', bold=True, before=0, after=2)
-    t4 = mktbl(doc, 6, 1, [W], 1.0)
+    t4 = mktbl(doc, 6, 1, [W], 0.9)
     for i in range(6):
         cw(t4.cell(i,0), f'({i+1})', FS)
 
     # ── §5 Reading Comprehension Unit1&2（思考・判断・表現　10点）──
     # A/B 各 5 問：英文 1〜2 文 → 2列並び、各 0.9cm
-    para(doc, '５　（思考・判断・表現　10点）', bold=True, before=5, after=2)
+    para(doc, '５　（思考・判断・表現　10点）', bold=True, before=4, after=2)
     para(doc, 'A（1×5=5点）　　　　　　　　　　　　　B（1×5=5点）',
          size=9.5, before=1, after=1)
     HW5 = W / 2  # = 9.3cm
-    t5 = mktbl(doc, 5, 2, [HW5, HW5], 0.90)
+    t5 = mktbl(doc, 5, 2, [HW5, HW5], 0.84)
     for i in range(5):
         for j in range(2):
             cw(t5.cell(i,j), f'({i+1})', FS)
 
     # ── §6 Reading / Ancient Greece（思考・判断・表現　15点）───────
-    para(doc, '６　（思考・判断・表現　15点）', bold=True, before=5, after=2)
+    para(doc, '６　（思考・判断・表現　15点）', bold=True, before=4, after=2)
 
     # 問1(1点)・問2(2点)・問5(2点) — A/B/C/D 1文字 → 小さめ
     # [問1 3.2cm][問2 3.2cm][問5 3.2cm] = 9.6cm（右端まで使わない）
@@ -259,7 +258,7 @@ def build(output_path):
     # ── 得点集計 ─────────────────────────────────────────────────
     para(doc, '得点集計', bold=True, before=5, after=1)
     ts = mktbl(doc, 2, 3, [5.8, 7.2, 5.6])
-    set_row_h(ts.rows[0], 0.55); set_row_h(ts.rows[1], 0.75)
+    set_row_h(ts.rows[0], 0.60); set_row_h(ts.rows[1], 1.2)
     for j, lbl in enumerate(['２・３（知識・技能）　/43',
                               '１・４〜７（思考・判断・表現）　/57',
                               '合計　/100']):
